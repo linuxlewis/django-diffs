@@ -31,4 +31,3 @@ def register(klass):
         connect(klass)
 
     return klass
-
