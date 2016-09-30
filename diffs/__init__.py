@@ -1,7 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-from .signals import connect
-
 __version__ = '0.0.1'
 default_app_config = 'diffs.apps.DiffLogConfig'
 
@@ -20,6 +18,7 @@ def register(klass):
     from dirtyfields import DirtyFieldsMixin
 
     from .models import DiffLogEntryManager
+    from .signals import connect
     # Hack to add dirtyfieldsmixin automatically
     if DirtyFieldsMixin not in klass.__bases__:
         klass.__bases__ = (DirtyFieldsMixin,) + klass.__bases__
