@@ -1,7 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-from django.apps import apps as django_apps
-
 from .signals import connect
 
 __version__ = '0.0.1'
@@ -18,8 +16,10 @@ def register(klass):
     class ExampleModel(models.Model):
         ...
     """
-    from .models import DiffLogEntryManager
+    from django.apps import apps as django_apps
     from dirtyfields import DirtyFieldsMixin
+
+    from .models import DiffLogEntryManager
     # Hack to add dirtyfieldsmixin automatically
     if DirtyFieldsMixin not in klass.__bases__:
         klass.__bases__ = (DirtyFieldsMixin,) + klass.__bases__
