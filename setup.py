@@ -8,6 +8,7 @@ setup(
     author='Sam Bolgert',
     author_email='sbolgert@gmail.com',
     description="Keep a record of diffs made to a Django model or collection of models",
+    long_description=open('README.rst').read(),
     license='GNU',
     packages=find_packages(),
     include_package_data=True,
