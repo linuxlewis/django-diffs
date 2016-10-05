@@ -48,7 +48,7 @@ Here's a quick example.
     question.question_text = 'What is python?'
     question.save()
 
-    diffs = Question.diffs.get_diffs(question.id)
+    diffs = Question.diffs.all(question.id)
 
     for diff in diffs:
         print(diff.timestamp)
@@ -140,7 +140,7 @@ on your model. It will be passed the list of ``dirty_fields``.
 
     question = Question.objects.create(question_text='What will happen?')
 
-    Question.diffs.get_diffs(question.id).last().diff
+    Question.diffs.all(question.id)[-1].data
     # {'fields': ['question_name']}
 
 
@@ -185,4 +185,4 @@ the child model. It must return a model instance with an id defined.
     choice.save()
 
     # returns diffs for question and it's choices
-    len(Question.diffs.get_diffs(question.id)) # 3
+    len(Question.diffs.all(question.id)) # 3

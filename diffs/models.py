@@ -77,7 +77,7 @@ class DiffModelManager:
         key = self._generate_key(pk, model_cls=model_cls)
         return DiffSortedSet(key, self.db)
 
-    def get_diffs(self, pk):
+    def all(self, pk):
         """Returns a list of Diff objects for the given primary key."""
         return list(self.get_sortedset(pk))
 
