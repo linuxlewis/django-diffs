@@ -17,7 +17,7 @@ def register(cls):
     from django.apps import apps as django_apps
     from dirtyfields import DirtyFieldsMixin
 
-    from .models import DiffLogEntryManager
+    from .models import DiffModelManager
     from .signals import connect
     # Hack to add dirtyfieldsmixin automatically
     if DirtyFieldsMixin not in cls.__bases__:

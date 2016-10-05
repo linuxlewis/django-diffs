@@ -1,73 +1,88 @@
-from django.db import models
-from django.db.models import Q
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes.fields import GenericForeignKey
+import json
+import time
 
-from .compat import get_jsonfield_class
-JSONField = get_jsonfield_class()
+from django.utils import timezone
+from django.utils.encoding import python_2_unicode_compatible
+from redisco.containers import SortedSet
+import six
 
-
-class DiffLogEntry(models.Model):
-    """
-    A model that represents a single diff for a given model.
-
-    The actual model values are serialized to json and stored in
-    `diff`.
-    """
-    content_type = models.ForeignKey(ContentType)
-    content_object = GenericForeignKey('content_type', 'object_id')
-    created_at = models.DateTimeField(auto_now=True)
-    created = models.BooleanField()
-    diff = JSONField()
-    object_id = models.PositiveIntegerField(db_index=True)
-    parent_content_type = models.ForeignKey(ContentType, related_name='+', null=True)
-    parent_object_id = models.PositiveIntegerField(db_index=True, null=True)
-    parent_object = GenericForeignKey('parent_content_type', 'parent_object_id')
+from . import get_connection
 
 
-class DiffLogEntryQuerySet(models.QuerySet):
-    """
-    Queryset that always uses the DiffLogEntry model.
-    """
-    def __init__(self, *args, **kwargs):
-        kwargs.update({'model': DiffLogEntry})
-        super(DiffLogEntryQuerySet, self).__init__(*args, **kwargs)
+@python_2_unicode_compatible
+class Diff:
+    """Model class that represents a single change to a model"""
+
+    @classmethod
+    def from_storage(cls, diff_str, timestamp):
+        """Instantiates a diff object from a diff json str from redis"""
+        diff = json.loads(diff_str.decode('utf-8'))
+        return cls(diff['data'], diff['created'], timestamp)
+
+    def __init__(self, data=None, created=None, timestamp=None):
+        self.created = created
+
+        if isinstance(data, six.string_types):
+            data = json.loads(data)
+
+        self.data = data
+
+        if timestamp is None:
+            timestamp = precise_timestamp()
+
+        self.timestamp = timestamp
+
+    def __str__(self):
+        return "<{} {}>".format(self.__class__.__name__, self.data)
+
+    def typecast_for_storage(self):
+        """Returns a tuple of the (diff_str, score) for redis"""
+        return json.dumps({'data': self.data, 'created': self.created}), self.timestamp
 
 
-class DiffLogEntryManager(models.Manager):
-    """
-    Manager to be set on registered models to access their diffs.
+def precise_timestamp():
+    """returns a integer representing a utc timestamp with milliseconds."""
+    now = timezone.now()
+    return int((time.mktime(now.utctimetuple()) * 1000 + now.microsecond / 1000) * 1000)
 
-    @diffs.register
-    class TestModel
-        ...
 
-    TestModel.diffs.get_all_diffs(pk)
-    """
+class DiffSortedSet(SortedSet):
+    """SortedSet wrapper class that implements iterator methods to return Diff objects."""
 
-    def get_queryset(self):
-        return DiffLogEntryQuerySet(using=self._db)
+    def __iter__(self):
+        return iter([Diff.from_storage(item[0], item[1]) for item in self.zrange(0, -1, withscores=True)])
 
-    def get_all_diffs(self, pk):
-        """
+    def __reversed__(self):
+        return iter([Diff.from_storage(item[0], item[1]) for item in self.zrevrange(0, -1, withscores=True)])
 
-        Returns all the diffs for the given pk inlcuding diffs where the pk is a parent.
 
-        :param pk: Primary key of registered model instance
-        :return: A queryset
-        """
-        return self.get_queryset().filter(Q(content_type=ContentType.objects.get_for_model(self.model),
-                                            object_id=pk) |
-                                          Q(parent_content_type=ContentType.objects.get_for_model(self.model),
-                                            parent_object_id=pk))
+class DiffModelManager:
+    """Manager class that wraps a DiffSortedSet with a django-like interface"""
+
+    def __init__(self):
+        self.model = None
+        self.db = get_connection()
+
+    def _generate_key(self, pk, model_cls=None):
+        model = model_cls or self.model
+        return '{}-{}'.format(model.__name__, str(pk))
+
+    def contribute_to_class(self, model_cls, name):
+        """Django hook to attach to model class."""
+        self.model = model_cls
+        setattr(model_cls, name, self)
+
+    def get_sortedset(self, pk, model_cls=None):
+        """Returns the SortedSet object"""
+        key = self._generate_key(pk, model_cls=model_cls)
+        return DiffSortedSet(key, self.db)
 
     def get_diffs(self, pk):
-        """
-        Returns all the diffs for the given pk
+        """Returns a list of Diff objects for the given primary key."""
+        return list(self.get_sortedset(pk))
 
-        :param pk: Primary key of the registered model instance
-        :return: A queryset
-        """
-        return self.get_queryset().filter(content_type=ContentType.objects.get_for_model(self.model),
-                                          object_id=pk)
-
+    def create(self, data=None, created=None, pk=None, model_cls=None):
+        """Create a new diff with the given params."""
+        diff = Diff(data=data, created=created)
+        self.get_sortedset(pk, model_cls=model_cls).zadd(*diff.typecast_for_storage())
+        return diff

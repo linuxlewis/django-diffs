@@ -1,28 +1,50 @@
+import json
 import types
 
 import diffs
-from django.test import TestCase
+from diffs.models import Diff
+from django.test import TestCase, TransactionTestCase
 
 from .models import TestModel
 
 
-class DiffTestCase(TestCase):
+class DiffModelTestCase(TestCase):
+
+    def test_data(self):
+        """Asserts that data can be a json_str or dict and it will be handled correctly"""
+
+        diff = Diff(data={'test': 'data'})
+
+        self.assertEqual(diff.data, {'test': 'data'})
+
+        diff = Diff(data=json.dumps({'test': 'data'}))
+
+        self.assertEqual(diff.data, {'test': 'data'})
+
+
+class DiffModelManagerTestCase(TransactionTestCase):
+
+    def setUp(self):
+        self.connection = diffs.get_connection()
+
+    def tearDown(self):
+        self.connection.flushdb()
 
     @classmethod
     def setUpClass(cls):
         # Register the class with diffs
         diffs.register(TestModel)
-        super(DiffTestCase, cls).setUpClass()
+        super(DiffModelManagerTestCase, cls).setUpClass()
 
     def _get_family(self):
         """Helper method that returns a child and connected parent"""
         parent = TestModel.objects.create(name='parent')
         child = TestModel.objects.create(name='child')
 
-        def get_parent_object(self):
+        def get_diff_parent(self):
             return parent
 
-        child.get_parent_object = types.MethodType(get_parent_object, child)
+        child.get_diff_parent = types.MethodType(get_diff_parent, child)
 
         return child, parent
 
@@ -33,19 +55,19 @@ class DiffTestCase(TestCase):
         tm.save()
 
         # It should create a diff
-        self.assertEqual(TestModel.diffs.get_diffs(tm.id).count(), 1)
+        self.assertEqual(len(TestModel.diffs.get_diffs(tm.id)), 1)
 
         tm.name = 'example'
         tm.save()
 
         # It should create a diff
-        self.assertEqual(TestModel.diffs.get_diffs(tm.id).count(), 2)
+        self.assertEqual(len(TestModel.diffs.get_diffs(tm.id)), 2)
 
         tm.name = 'example'
         tm.save()
 
         # It should not create a diff
-        self.assertEqual(TestModel.diffs.get_diffs(tm.id).count(), 2)
+        self.assertEqual(len(TestModel.diffs.get_diffs(tm.id)), 2)
 
     def test_serialize_diff(self):
         """Asserts the serialize_diff method is called when available and the data is persisted."""
@@ -54,6 +76,9 @@ class DiffTestCase(TestCase):
             return {'test': 'data', 'fields': dirty_fields}
 
         tm = TestModel.objects.create(name='Example')
+
+        self.assertEqual(len(TestModel.diffs.get_diffs(tm.id)), 1)
+
         # Add the method to the instance
         tm.serialize_diff = types.MethodType(serialize_diff, tm)
 
@@ -61,53 +86,27 @@ class DiffTestCase(TestCase):
         tm.save()
 
         # It should create a diff
-        self.assertEqual(TestModel.diffs.get_diffs(tm.id).count(), 2)
+        self.assertEqual(len(TestModel.diffs.get_diffs(tm.id)), 2)
 
         # It should have expected data
         expected = {'test': 'data', 'fields': ['name']}
 
-        actual = TestModel.diffs.get_diffs(tm.id).last().diff
+        diff = TestModel.diffs.get_diffs(tm.id)[-1]
 
-        self.assertEqual(expected, actual)
+        self.assertEqual(expected, diff.data)
 
-    def test_get_parent_object(self):
-        """Asserts the get_parent_object method is called when available and data is persisted"""
+    def test_get_diff_parent(self):
+        """Asserts the get_diff_parent method is called when available and data is persisted."""
 
         child, parent = self._get_family()
 
         child.name = 'child2'
         child.save()
 
-        diff = TestModel.diffs.get_diffs(child.id).last()
+        diffs = TestModel.diffs.get_diffs(child.id)
 
-        # It should have a parent
-        self.assertEqual(diff.parent_object, parent)
+        self.assertEqual(len(diffs), 1)
+        # It should save the diff under the parent
+        parent_diffs = TestModel.diffs.get_diffs(parent.id)
 
-    def test_get_diffs(self):
-        """Asserts the related manager get_diffs returns only data for the given instance"""
-
-        child, parent = self._get_family()
-
-        self.assertEqual(TestModel.diffs.get_diffs(parent.id).count(), 1)
-
-        parent_diff = TestModel.diffs.get_diffs(parent.id).last()
-        self.assertIsNone(parent_diff.parent_object)
-
-    def test_get_all_diffs(self):
-        """Asserts the related manager get_all_diffs returns data for the given instance and
-        when the instance is the parent.
-        """
-
-        child, parent = self._get_family()
-
-        self.assertEqual(TestModel.diffs.get_all_diffs(parent.id).count(), 1)
-
-        child.name = 'family'
-        child.save()
-
-        # it should include parent data
-        self.assertEqual(TestModel.diffs.get_all_diffs(parent.id).count(), 2)
-
-        last_diff = TestModel.diffs.get_all_diffs(parent.id).last()
-        # it should be the parent
-        self.assertEqual(parent, last_diff.parent_object)
+        self.assertEqual(len(parent_diffs), 2)
