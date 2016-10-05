@@ -5,25 +5,30 @@ Django Diffs
     :target: https://travis-ci.org/linuxlewis/django-diffs
 
 
-Django diffs allows models to be registered to track it's changes (or diffs) over time.
-It adds a manager to registered model to easily access it's changes
+Django diffs allows models to be registered to cache it's changes (or diffs) over a fixed time period.
 
-It's compatible with Python 2/3 and Django 1.8 and above. It requires a postgresql database.
+The diffs are stored in redis using a SortedSet and accessed via a manager-like object on the registered django model class.
+
+It's compatible with Python 2/3 and Django 1.8 and above. It requires an available redis server.
 
 
 Table of Contents
 -----------------
 
 - `Getting Started <#getting-started>`__
+- `Configuration <#configuration>`__
 - `Custom Serialization <#custom-serialization>`__
-- `Tracking related models <#related-models>`__
+- `Related models <#related-models>`__
 
 
 How does it Work?
 -----------------
 
-It allows models to be registered similar to ``ModelAdmin``. When the model is saved the diff is serialized and stored.
-It relies on django-dirtyfields to track the changes on models. Changes can be accessed via the ``diffs`` manager on the registered model.
+Models are registered with the ``@diffs.register`` decorator and their changes are serialized and saved to redis on signals.
+The decorator installs django-dirtyfields to the model on registration to get the changed fields of the model instance.
+
+Changes can be accessed via the ``diffs`` manager on the registered model. The diffs manager returns a list of ``Diff``
+objects that have properties of ``data``, ``created``, and ``timestamp``.
 
 Here's a quick example.
 
@@ -43,15 +48,20 @@ Here's a quick example.
     question.question_text = 'What is python?'
     question.save()
 
-    diffs = Question.diffs.get_diffs(question.id).all()
+    diffs = Question.diffs.get_diffs(question.id)
 
     for diff in diffs:
-        print(diff.diff)
+        print(diff.timestamp)
+        print(diff.data)
+        print(diff.created)
 
 Why?
 ----
 
-You need to track the changes over time to a single or collection of related django models.
+You need to cache the changes to a single django model or collection of models for a fixed time period.
+
+Tracking the changes prevents clients from having to re-request all of the model data which is assumed to be costly.
+
 
 
 Getting Started
@@ -72,12 +82,6 @@ Getting Started
         'diffs',
     )
 
-- Run Migrations
-
-.. code:: bash
-
-    python manage.py migrate
-
 - Register a Model
 
 .. code:: python
@@ -92,6 +96,24 @@ Getting Started
         pub_date = models.DateTimeField('date published')
 
 That's it! Changes will now be tracked automatically for this model.
+
+Configuration
+-------------
+
+Django-diffs can be configured via ``django.conf.settings``. Below is the default configuration
+
+.. code:: python
+
+    # settings.py
+
+    DIFFS_SETTINGS = {
+        'redis': {
+            'host': 'localhost',
+            'port': 6379,
+            'db': 0,
+        },
+        'max_element_age': 60*60
+    }
 
 
 Custom Serialization
@@ -128,10 +150,9 @@ Related models
 Sometimes you want to track changes on a collection of related models.
 These could be individual items part of a larger Report object.
 
-Django-diffs allows you to set a parent objects by implementing ``get_parent_object`` on
+Django-diffs allows you to set a parent objects by implementing ``get_diff_parent`` on
 the child model. It must return a model instance with an id defined.
 
-To access all the changes on the parent or child objects use the diffs manager ``get_all_diffs`` method.
 
 
 .. code:: python
@@ -164,4 +185,4 @@ To access all the changes on the parent or child objects use the diffs manager `
     choice.save()
 
     # returns diffs for question and it's choices
-    Question.diffs.get_all_diffs(question.id).count() # 3
+    len(Question.diffs.get_diffs(question.id)) # 3
