@@ -46,6 +46,6 @@ def serialize_object(instance, dirty_fields):
     return serializers.serialize('json', [instance], fields=dirty_fields)
 
 
-def connect(klass):
-    pre_save.connect(on_pre_save, klass)
-    post_save.connect(on_post_save, klass)
+def connect(cls):
+    pre_save.connect(on_pre_save, cls)
+    post_save.connect(on_post_save, cls)

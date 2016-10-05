@@ -6,11 +6,11 @@ default_app_config = 'diffs.apps.DiffLogConfig'
 klasses_to_connect = []
 
 
-def register(klass):
+def register(cls):
     """
     Decorator function that registers a class to record diffs.
 
-    @register
+    @diffs.register
     class ExampleModel(models.Model):
         ...
     """
@@ -20,14 +20,15 @@ def register(klass):
     from .models import DiffLogEntryManager
     from .signals import connect
     # Hack to add dirtyfieldsmixin automatically
-    if DirtyFieldsMixin not in klass.__bases__:
-        klass.__bases__ = (DirtyFieldsMixin,) + klass.__bases__
+    if DirtyFieldsMixin not in cls.__bases__:
+        cls.__bases__ = (DirtyFieldsMixin,) + cls.__bases__
 
-    klass.add_to_class('diffs', DiffLogEntryManager())
+    cls.add_to_class('diffs', DiffModelManager())
 
     if not django_apps.ready:
-        klasses_to_connect.append(klass)
+        klasses_to_connect.append(cls)
     else:
-        connect(klass)
+        connect(cls)
 
-    return klass
+    return cls
+
