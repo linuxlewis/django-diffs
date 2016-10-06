@@ -9,7 +9,7 @@ from .helpers import precise_timestamp
 
 
 @python_2_unicode_compatible
-class Diff:
+class Diff(object):
     """Model class that represents a single change to a model"""
 
     @classmethod
@@ -49,7 +49,26 @@ class DiffSortedSet(SortedSet):
         return iter([Diff.from_storage(item[0], item[1]) for item in self.zrevrange(0, -1, withscores=True)])
 
 
-class DiffModelManager:
+class DiffModelDescriptor(object):
+
+    def __init__(self, manager):
+        self.manager = manager
+
+    def __get__(self, instance, owner):
+
+        # if accessing from the class
+        if instance is None:
+            return self.manager
+
+        return self.manager.get_by_object_id(instance.id)
+
+    def contribute_to_class(self, model_cls, name):
+        """Django hook to attach to model class."""
+        self.manager.model = model_cls
+        setattr(model_cls, name, self)
+
+
+class DiffModelManager(object):
     """Manager class that wraps a DiffSortedSet with a django-like interface"""
 
     def __init__(self):
@@ -60,18 +79,12 @@ class DiffModelManager:
         model = model_cls or self.model
         return '{}-{}'.format(model.__name__, str(pk))
 
-    def contribute_to_class(self, model_cls, name):
-        """Django hook to attach to model class."""
-        self.model = model_cls
-        setattr(model_cls, name, self)
-
     def get_sortedset(self, pk, model_cls=None):
         """Returns the SortedSet object"""
         key = self._generate_key(pk, model_cls=model_cls)
         return DiffSortedSet(key, self.db)
 
-    def all(self, pk):
-        """Returns a list of Diff objects for the given primary key."""
+    def get_by_object_id(self, pk):
         return list(self.get_sortedset(pk))
 
     def create(self, data=None, created=None, pk=None, model_cls=None):

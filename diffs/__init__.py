@@ -17,13 +17,13 @@ def register(cls):
     from django.apps import apps as django_apps
     from dirtyfields import DirtyFieldsMixin
 
-    from .models import DiffModelManager
+    from .models import DiffModelManager, DiffModelDescriptor
     from .signals import connect
     # Hack to add dirtyfieldsmixin automatically
     if DirtyFieldsMixin not in cls.__bases__:
         cls.__bases__ = (DirtyFieldsMixin,) + cls.__bases__
 
-    cls.add_to_class('diffs', DiffModelManager())
+    cls.add_to_class('diffs', DiffModelDescriptor(DiffModelManager()))
 
     if not django_apps.ready:
         klasses_to_connect.append(cls)

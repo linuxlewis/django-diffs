@@ -55,19 +55,19 @@ class DiffModelManagerTestCase(TransactionTestCase):
         tm.save()
 
         # It should create a diff
-        self.assertEqual(len(TestModel.diffs.all(tm.id)), 1)
+        self.assertEqual(len(TestModel.diffs.get_by_object_id(tm.id)), 1)
 
         tm.name = 'example'
         tm.save()
 
         # It should create a diff
-        self.assertEqual(len(TestModel.diffs.all(tm.id)), 2)
+        self.assertEqual(len(tm.diffs), 2)
 
         tm.name = 'example'
         tm.save()
 
         # It should not create a diff
-        self.assertEqual(len(TestModel.diffs.all(tm.id)), 2)
+        self.assertEqual(len(TestModel.diffs.get_by_object_id(tm.id)), 2)
 
     def test_serialize_diff(self):
         """Asserts the serialize_diff method is called when available and the data is persisted."""
@@ -77,7 +77,7 @@ class DiffModelManagerTestCase(TransactionTestCase):
 
         tm = TestModel.objects.create(name='Example')
 
-        self.assertEqual(len(TestModel.diffs.all(tm.id)), 1)
+        self.assertEqual(len(TestModel.diffs.get_by_object_id(tm.id)), 1)
 
         # Add the method to the instance
         tm.serialize_diff = types.MethodType(serialize_diff, tm)
@@ -86,12 +86,12 @@ class DiffModelManagerTestCase(TransactionTestCase):
         tm.save()
 
         # It should create a diff
-        self.assertEqual(len(TestModel.diffs.all(tm.id)), 2)
+        self.assertEqual(len(TestModel.diffs.get_by_object_id(tm.id)), 2)
 
         # It should have expected data
         expected = {'test': 'data', 'fields': ['name']}
 
-        diff = TestModel.diffs.all(tm.id)[-1]
+        diff = TestModel.diffs.get_by_object_id(tm.id)[-1]
 
         self.assertEqual(expected, diff.data)
 
