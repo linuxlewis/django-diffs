@@ -2,11 +2,8 @@ SECRET_KEY = 'dog'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'postgres',
-        'HOST': 'localhost',
-        'USER': 'postgres',
-        'PASSWORD': ''
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'diffs',
     }
 }
 

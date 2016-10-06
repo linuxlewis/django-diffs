@@ -15,7 +15,11 @@ setup(
     install_requires=[
         'Django>=1.8',
         'django-dirtyfields>=1.2',
-        'psycopg2>=2.6'
+        'six>=1.10.0',
+        'redisco==0.2.9'
+    ],
+    dependency_links=[
+        'git://github.com/kiddouk/redisco.git@9a3e5102f2bc6449a2e7f2aa8eb7ec1b58453bd2#egg=redisco'
     ],
     classifiers=[
         'Programming Language :: Python :: 2.7',

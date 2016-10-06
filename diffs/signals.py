@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
+
 from django.core import serializers
+from django.db import connection
 from django.db.models.signals import pre_save, post_save
 
 
@@ -8,9 +10,6 @@ def on_pre_save(sender, instance, **kwargs):
 
 
 def on_post_save(sender, instance, created, **kwargs):
-    from django.contrib.contenttypes.models import ContentType
-    from .models import DiffLogEntry
-
     if instance.__dirty_fields:
         # get the data
         if hasattr(instance, 'serialize_diff'):
@@ -18,25 +17,22 @@ def on_post_save(sender, instance, created, **kwargs):
         else:
             data = serialize_object(instance, instance.__dirty_fields)
 
+        model = instance
+        # check if should be related to another "parent" model
+        if hasattr(instance, 'get_diff_parent'):
+            model = instance.get_diff_parent()
+
         create_kwargs = {
-            'content_type': ContentType.objects.get_for_model(sender),
+            'data': data,
             'created': created,
-            'diff': data,
-            'object_id': instance.id,
+            'pk': model.id,
+            'model_cls': model.__class__
         }
-
-        # get parent
-        parent = None
-        if hasattr(instance, 'get_parent_object'):
-            parent = instance.get_parent_object()
-
-        if parent:
-            create_kwargs.update({
-                'parent_content_type': ContentType.objects.get_for_model(type(parent)),
-                'parent_object_id': parent.id
-            })
-
-        DiffLogEntry.objects.create(**create_kwargs)
+        # Respect the transaction if were in one
+        if hasattr(connection, 'on_commit'):
+            connection.on_commit(lambda: sender.diffs.create(**create_kwargs))
+        else:
+            sender.diffs.create(**create_kwargs)
 
         del instance.__dirty_fields
 
@@ -46,6 +42,6 @@ def serialize_object(instance, dirty_fields):
     return serializers.serialize('json', [instance], fields=dirty_fields)
 
 
-def connect(klass):
-    pre_save.connect(on_pre_save, klass)
-    post_save.connect(on_post_save, klass)
+def connect(cls):
+    pre_save.connect(on_pre_save, cls)
+    post_save.connect(on_post_save, cls)
