@@ -1,12 +1,11 @@
 import json
-import time
 
-from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from redisco.containers import SortedSet
 import six
 
 from . import get_connection
+from .helpers import precise_timestamp
 
 
 @python_2_unicode_compatible
@@ -38,12 +37,6 @@ class Diff:
     def typecast_for_storage(self):
         """Returns a tuple of the (diff_str, score) for redis"""
         return json.dumps({'data': self.data, 'created': self.created}), self.timestamp
-
-
-def precise_timestamp():
-    """returns a integer representing a utc timestamp with milliseconds."""
-    now = timezone.now()
-    return int((time.mktime(now.utctimetuple()) * 1000 + now.microsecond / 1000) * 1000)
 
 
 class DiffSortedSet(SortedSet):
