@@ -16,6 +16,7 @@ setup(
         'Django>=1.8',
         'django-dirtyfields>=1.2',
         'six>=1.10.0',
+        'redis>=2.10.5',
         'redisco==0.2.9'
     ],
     dependency_links=[
