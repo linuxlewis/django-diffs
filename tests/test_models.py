@@ -1,9 +1,15 @@
+from datetime import timedelta
 import json
 import types
 
 import diffs
+from diffs.helpers import precise_timestamp
 from diffs.models import Diff
+from diffs.settings import diffs_settings
+
+from django.core.management import call_command
 from django.test import TestCase, TransactionTestCase
+from django.utils import timezone
 
 from .models import TestModel
 
@@ -103,10 +109,41 @@ class DiffModelManagerTestCase(TransactionTestCase):
         child.name = 'child2'
         child.save()
 
-        diffs = TestModel.diffs.all(child.id)
+        diffs = TestModel.diffs.get_by_object_id(child.id)
 
         self.assertEqual(len(diffs), 1)
         # It should save the diff under the parent
-        parent_diffs = TestModel.diffs.all(parent.id)
+        parent_diffs = TestModel.diffs.get_by_object_id(parent.id)
 
         self.assertEqual(len(parent_diffs), 2)
+
+
+class PruneDiffTestCase(TestCase):
+
+    def setUp(self):
+        self.connection = diffs.get_connection()
+
+    def tearDown(self):
+        self.connection.flushdb()
+
+    def test_elements(self):
+        """Asserts that elements are removed when expected."""
+
+        current_age = precise_timestamp()
+
+        self.connection.zadd('test', 'one', current_age)
+
+        old_age = precise_timestamp(dt=timezone.now() - timedelta(seconds=diffs_settings['max_element_age'] + 1))
+
+        self.connection.zadd('test', 'two', old_age)
+
+        call_command('prune_diffs')
+
+        # It should remove the old element
+        self.assertEqual(self.connection.zcard('test'), 1)
+
+    def test_non_sorted_set(self):
+        """Asserts the command doesn't blow up when its not a sortedset"""
+        self.connection.set('test', 'value')
+
+        call_command('prune_diffs')

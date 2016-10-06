@@ -17,6 +17,7 @@ Table of Contents
 
 - `Getting Started <#getting-started>`__
 - `Configuration <#configuration>`__
+- `Pruning Diffs <#pruning-diffs>`__
 - `Custom Serialization <#custom-serialization>`__
 - `Related models <#related-models>`__
 
@@ -29,6 +30,8 @@ The decorator installs django-dirtyfields to the model on registration to get th
 
 Changes can be accessed via the ``diffs`` manager on the registered model. The diffs manager returns a list of ``Diff``
 objects that have properties of ``data``, ``created``, and ``timestamp``.
+
+The manager can be accessed via the class like ``Question.diffs`` or like a related manager on the instance ``instance.diffs``.
 
 Here's a quick example.
 
@@ -48,12 +51,12 @@ Here's a quick example.
     question.question_text = 'What is python?'
     question.save()
 
-    diffs = Question.diffs.all(question.id)
-
-    for diff in diffs:
+    for diff in question.diffs:
         print(diff.timestamp)
         print(diff.data)
         print(diff.created)
+
+    diffs = Question.diffs.get_by_object_id(question.id)
 
 Why?
 ----
@@ -115,6 +118,30 @@ Django-diffs can be configured via ``django.conf.settings``. Below is the defaul
         'max_element_age': 60*60
     }
 
+The following keys are supported for ``DIFFS_SETTINGS``
+
+
+``redis`` -- A dictionary with the keys ``host``, ``port`` and ``db`` for details of the redis server.
+
+``max_element_age`` -- Defines the number of seconds a single diff should be allowed to live. This is used in the pruning script
+to remove old elements from the set.
+
+
+Pruning Diffs
+-------------
+
+By default redis only allows you to set an expire on an entire key. You cannot set an expiry per element in a set or sorted set.
+
+To work around this django-diffs sets the current unix timestamp as the SortedSet element score. Items can then be easily removed
+using the redis command ``ZREMRANGEBYSCORE``.
+
+All of this has been handled for you in the custom management command ``prune_diffs``. Run this on a cron schedule to keep your
+cache up to date.
+
+.. code:: bash
+
+    python manage.py prune_diffs
+
 
 Custom Serialization
 --------------------
@@ -140,7 +167,7 @@ on your model. It will be passed the list of ``dirty_fields``.
 
     question = Question.objects.create(question_text='What will happen?')
 
-    Question.diffs.all(question.id)[-1].data
+    Question.diffs.get_by_object_id(question.id)[-1].data
     # {'fields': ['question_name']}
 
 
@@ -185,4 +212,4 @@ the child model. It must return a model instance with an id defined.
     choice.save()
 
     # returns diffs for question and it's choices
-    len(Question.diffs.all(question.id)) # 3
+    len(question.diffs) # 3
