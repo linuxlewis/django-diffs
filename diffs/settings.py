@@ -28,4 +28,4 @@ def merge_settings(defaults, user_settings):
 
     return merged
 
-diff_settings = merge_settings(DEFAULTS, USER_SETTINGS)
+diffs_settings = merge_settings(DEFAULTS, USER_SETTINGS)

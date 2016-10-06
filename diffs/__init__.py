@@ -35,6 +35,6 @@ def register(cls):
 
 def get_connection():
     import redis
-    from .settings import diff_settings
+    from .settings import diffs_settings
     """Helper method to get redis connection configured by settings"""
-    return redis.Redis(**diff_settings['redis'])
+    return redis.Redis(**diffs_settings['redis'])
