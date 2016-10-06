@@ -20,7 +20,7 @@ setup(
         'redisco==0.2.9'
     ],
     dependency_links=[
-        'git://github.com/kiddouk/redisco.git@9a3e5102f2bc6449a2e7f2aa8eb7ec1b58453bd2#egg=redisco'
+        'git://github.com/kiddouk/redisco.git@9a3e5102f2bc6449a2e7f2aa8eb7ec1b58453bd2#egg=redisco-0.2.9'
     ],
     classifiers=[
         'Programming Language :: Python :: 2.7',
