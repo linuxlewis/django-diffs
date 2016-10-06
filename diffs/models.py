@@ -1,7 +1,6 @@
 import json
 
 from django.utils.encoding import python_2_unicode_compatible
-from redisco.containers import SortedSet
 import six
 
 from . import get_connection
@@ -39,14 +38,41 @@ class Diff(object):
         return json.dumps({'data': self.data, 'created': self.created}), self.timestamp
 
 
-class DiffSortedSet(SortedSet):
-    """SortedSet wrapper class that implements iterator methods to return Diff objects."""
+class DiffSortedSet(object):
+    """Simple class that represents a single SortedSet in redis"""
+
+    def __init__(self, key, db):
+        self.key = key
+        self.db = db
+
+    def __getitem__(self, index):
+        if isinstance(index, slice):
+            return self.zrange(index.start, index.stop)
+        else:
+            return self.zrange(index, index)[0]
 
     def __iter__(self):
         return iter([Diff.from_storage(item[0], item[1]) for item in self.zrange(0, -1, withscores=True)])
 
     def __reversed__(self):
         return iter([Diff.from_storage(item[0], item[1]) for item in self.zrevrange(0, -1, withscores=True)])
+
+    def zadd(self, members, score=1):
+
+        _members = []
+        if not isinstance(members, dict):
+            _members = [members, score]
+        else:
+            for member, score in members.items():
+                _members += [member, score]
+
+        return self.db.zadd(self.key, *_members)
+
+    def zrange(self, start, stop, withscores=False):
+        return self.db.zrange(self.key, start, stop, withscores=withscores)
+
+    def zrevrange(self, start, stop, **kwargs):
+        return self.db.zrevrange(self.key, start, stop, **kwargs)
 
 
 class DiffModelDescriptor(object):
