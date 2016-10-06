@@ -75,7 +75,7 @@ Getting Started
 
 .. code:: bash
 
-    pip install django-diffs
+    pip install --process-dependency-links django-diffs
 
 - Add ``diffs`` to ``INSTALLED_APPS``
 

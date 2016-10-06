@@ -17,10 +17,10 @@ setup(
         'django-dirtyfields>=1.2',
         'six>=1.10.0',
         'redis>=2.10.5',
-        'redisco==0.2.9'
+        'redisco>=0.2.9'
     ],
     dependency_links=[
-        'git://github.com/kiddouk/redisco.git@9a3e5102f2bc6449a2e7f2aa8eb7ec1b58453bd2#egg=redisco-0.2.9'
+        'https://github.com/kiddouk/redisco/archive/master.zip#egg=redisco-0.2.9'
     ],
     classifiers=[
         'Programming Language :: Python :: 2.7',
