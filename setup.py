@@ -9,7 +9,7 @@ setup(
     author_email='sbolgert@gmail.com',
     description="Keep a record of diffs made to a Django model or collection of models",
     long_description=open('README.rst').read(),
-    license='GNU',
+    license='MIT',
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
