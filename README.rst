@@ -115,7 +115,8 @@ Django-diffs can be configured via ``django.conf.settings``. Below is the defaul
             'port': 6379,
             'db': 0,
         },
-        'max_element_age': 60*60
+        'max_element_age': 60*60,
+        'use_transactions': True
     }
 
 The following keys are supported for ``DIFFS_SETTINGS``
@@ -125,6 +126,9 @@ The following keys are supported for ``DIFFS_SETTINGS``
 
 ``max_element_age`` -- Defines the number of seconds a single diff should be allowed to live. This is used in the pruning script
 to remove old elements from the set.
+
+``use_transactions`` -- Boolean to configure django-diffs using Django's ``connection.on_commit`` callback registry. When enabled
+django-diffs will defer persistence to ``on_commit``.
 
 
 Pruning Diffs
