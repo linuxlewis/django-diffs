@@ -12,7 +12,7 @@ class Diff(object):
     """Model class that represents a single change to a model"""
 
     @classmethod
-    def from_storage(cls, diff_str, timestamp):
+    def from_storage(cls, diff_str, timestamp=None):
         """Instantiates a diff object from a diff json str from redis"""
         diff = json.loads(diff_str.decode('utf-8'))
         return cls(diff['data'], diff['created'], timestamp)
@@ -39,7 +39,11 @@ class Diff(object):
 
 
 class DiffSortedSet(object):
-    """Simple class that represents a single SortedSet in redis"""
+    """
+    Simple class that represents a single SortedSet in redis.
+
+    By default it returns diff objects.
+    """
 
     def __init__(self, key, db):
         self.key = key
@@ -52,13 +56,44 @@ class DiffSortedSet(object):
             return self.zrange(index, index)[0]
 
     def __iter__(self):
-        return iter([Diff.from_storage(item[0], item[1]) for item in self.zrange(0, -1, withscores=True)])
+        return iter(self.zrange(0, -1, withscores=True))
 
     def __reversed__(self):
-        return iter([Diff.from_storage(item[0], item[1]) for item in self.zrevrange(0, -1, withscores=True)])
+        return iter(self.zrevrange(0, -1, withscores=True))
+
+    def _process_response(self, iterable):
+        response = []
+        for item in iterable:
+
+            if isinstance(item, (list, tuple)):
+                diff = Diff.from_storage(item[0], item[1])
+            else:
+                diff = Diff.from_storage(item)
+
+            response.append(diff)
+        return response
+
+    @property
+    def min_score(self):
+        """
+        Returns the minimum score in the SortedSet.
+        """
+        try:
+            return self.zscore(self.db.zrange(self.key, 0, 0)[0])
+        except IndexError:
+            return None
+
+    @property
+    def max_score(self):
+        """
+        Returns the maximum score in the SortedSet.
+        """
+        try:
+            return self.zscore(self.db.zrange(self.key, -1, -1)[0])
+        except IndexError:
+            return None
 
     def zadd(self, members, score=1):
-
         _members = []
         if not isinstance(members, dict):
             _members = [members, score]
@@ -69,10 +104,16 @@ class DiffSortedSet(object):
         return self.db.zadd(self.key, *_members)
 
     def zrange(self, start, stop, withscores=False):
-        return self.db.zrange(self.key, start, stop, withscores=withscores)
+        return self._process_response(self.db.zrange(self.key, start, stop, withscores=withscores))
+
+    def zrevrangebyscore(self, max, min, **kwargs):
+        return self._process_response(self.db.zrevrangebyscore(self.key, max, min, **kwargs))
 
     def zrevrange(self, start, stop, **kwargs):
-        return self.db.zrevrange(self.key, start, stop, **kwargs)
+        return self._process_response(self.db.zrevrange(self.key, start, stop, **kwargs))
+
+    def zscore(self, elem):
+        return self.db.zscore(self.key, elem)
 
 
 class DiffModelDescriptor(object):
@@ -113,8 +154,8 @@ class DiffModelManager(object):
     def get_by_object_id(self, pk):
         return list(self.get_sortedset(pk))
 
-    def create(self, data=None, created=None, pk=None, model_cls=None):
+    def create(self, data=None, created=None, pk=None, model_cls=None, timestamp=None):
         """Create a new diff with the given params."""
-        diff = Diff(data=data, created=created)
+        diff = Diff(data=data, created=created, timestamp=timestamp)
         self.get_sortedset(pk, model_cls=model_cls).zadd(*diff.typecast_for_storage())
         return diff
