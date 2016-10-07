@@ -16,3 +16,7 @@ INSTALLED_APPS = (
     'diffs',
     'tests'
 )
+
+DIFFS_SETTINGS = {
+    'use_transactions': False
+}

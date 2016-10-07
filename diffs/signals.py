@@ -4,6 +4,10 @@ from django.core import serializers
 from django.db import connection
 from django.db.models.signals import pre_save, post_save
 
+from .helpers import precise_timestamp
+
+from .settings import diffs_settings
+
 
 def on_pre_save(sender, instance, **kwargs):
     instance.__dirty_fields = list(instance.get_dirty_fields().keys())
@@ -20,16 +24,19 @@ def on_post_save(sender, instance, created, **kwargs):
         model = instance
         # check if should be related to another "parent" model
         if hasattr(instance, 'get_diff_parent'):
-            model = instance.get_diff_parent()
+            parent = instance.get_diff_parent()
+            if parent:
+                model = parent
 
         create_kwargs = {
             'data': data,
             'created': created,
             'pk': model.id,
-            'model_cls': model.__class__
+            'model_cls': model.__class__,
+            'timestamp': precise_timestamp()
         }
-        # Respect the transaction if were in one
-        if hasattr(connection, 'on_commit'):
+        # Respect the transaction if we can and should.
+        if hasattr(connection, 'on_commit') and diffs_settings['use_transactions']:
             connection.on_commit(lambda: sender.diffs.create(**create_kwargs))
         else:
             sender.diffs.create(**create_kwargs)

@@ -8,7 +8,7 @@ from diffs.models import Diff
 from diffs.settings import diffs_settings
 
 from django.core.management import call_command
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase
 from django.utils import timezone
 
 from .models import TestModel
@@ -28,7 +28,7 @@ class DiffModelTestCase(TestCase):
         self.assertEqual(diff.data, {'test': 'data'})
 
 
-class DiffModelManagerTestCase(TransactionTestCase):
+class DiffModelManagerTestCase(TestCase):
 
     def setUp(self):
         self.connection = diffs.get_connection()

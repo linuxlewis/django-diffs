@@ -6,7 +6,8 @@ DEFAULTS = {
         'port': 6379,
         'db': 0,
     },
-    'max_element_age': 60*60
+    'max_element_age': 60*60,
+    'use_transactions': True
 }
 
 USER_SETTINGS = getattr(settings, 'DIFFS_SETTINGS', None)
@@ -25,6 +26,9 @@ def merge_settings(defaults, user_settings):
 
     if 'redis' in user_settings:
         merged['redis'].update(user_settings['redis'])
+
+    if 'use_transactions' in user_settings:
+        merged['use_transactions'] = user_settings['use_transactions']
 
     return merged
 
