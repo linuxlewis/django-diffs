@@ -116,7 +116,8 @@ Django-diffs can be configured via ``django.conf.settings``. Below is the defaul
             'db': 0,
         },
         'max_element_age': 60*60,
-        'use_transactions': True
+        'use_transactions': True,
+        'test_mode': False
     }
 
 The following keys are supported for ``DIFFS_SETTINGS``
@@ -129,6 +130,9 @@ to remove old elements from the set.
 
 ``use_transactions`` -- Boolean to configure django-diffs using Django's ``connection.on_commit`` callback registry. When enabled
 django-diffs will defer persistence to ``on_commit``.
+
+``test_mode`` -- Boolean to configure using test mode. Test mode uses ``fake_redis`` instead of real ``redis`` so a server isn't required.
+Use this mode when running your unittests.
 
 
 Pruning Diffs
