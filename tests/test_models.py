@@ -11,6 +11,7 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
 
+from .mixins import TestModeMixin
 from .models import TestModel
 
 
@@ -147,3 +148,7 @@ class PruneDiffTestCase(TestCase):
         self.connection.set('test', 'value')
 
         call_command('prune_diffs')
+
+
+class FakeDiffModelManagerTestCase(TestModeMixin, DiffModelManagerTestCase):
+    pass

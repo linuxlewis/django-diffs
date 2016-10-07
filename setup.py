@@ -16,7 +16,8 @@ setup(
         'Django>=1.8',
         'django-dirtyfields>=1.2',
         'six>=1.10.0',
-        'redis>=2.10.5'
+        'redis>=2.10.5',
+        'fakeredis>=0.8.1'
     ],
     classifiers=[
         'Programming Language :: Python :: 2.7',

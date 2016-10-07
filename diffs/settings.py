@@ -7,7 +7,8 @@ DEFAULTS = {
         'db': 0,
     },
     'max_element_age': 60*60,
-    'use_transactions': True
+    'use_transactions': True,
+    'test_mode': False
 }
 
 USER_SETTINGS = getattr(settings, 'DIFFS_SETTINGS', None)
@@ -21,14 +22,12 @@ def merge_settings(defaults, user_settings):
     if not user_settings:
         return merged
 
-    if 'max_element_age' in user_settings:
-        merged['max_element_age'] = user_settings['max_element_age']
+    for setting in ('max_element_age', 'use_transactions', 'test_mode'):
+        if setting in user_settings:
+            merged[setting] = user_settings[setting]
 
     if 'redis' in user_settings:
         merged['redis'].update(user_settings['redis'])
-
-    if 'use_transactions' in user_settings:
-        merged['use_transactions'] = user_settings['use_transactions']
 
     return merged
 
