@@ -106,6 +106,9 @@ class DiffSortedSet(object):
     def zrange(self, start, stop, withscores=False):
         return self._process_response(self.db.zrange(self.key, start, stop, withscores=withscores))
 
+    def zrangebyscore(self, min, max, **kwargs):
+        return self._process_response(self.db.zrangebyscore(self.key, min, max, **kwargs))
+
     def zrevrangebyscore(self, max, min, **kwargs):
         return self._process_response(self.db.zrevrangebyscore(self.key, max, min, **kwargs))
 
