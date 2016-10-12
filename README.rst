@@ -208,7 +208,7 @@ the child model. It must return a model instance with an id defined.
         choice_text = models.CharField(max_length=200)
         votes = models.IntegerField(default=0)
 
-        def get_parent_object(self):
+        def get_diff_parent(self):
             # save the db lookup
             return Question(id=self.question_id)
 
