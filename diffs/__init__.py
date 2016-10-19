@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
-__version__ = '0.1.6'
+__version__ = '0.1.7'
 default_app_config = 'diffs.apps.DiffLogConfig'
 
 klasses_to_connect = []
@@ -19,8 +19,8 @@ def register(cls):
 
     from .models import DiffModelManager, DiffModelDescriptor
     from .signals import connect
-    # Hack to add dirtyfieldsmixin automatically
-    if DirtyFieldsMixin not in cls.__bases__:
+    # check if class implemented get_dirty_fields else hack in dirtyfields
+    if not hasattr(cls, 'get_dirty_fields') and DirtyFieldsMixin not in cls.__bases__:
         cls.__bases__ = (DirtyFieldsMixin,) + cls.__bases__
 
     cls.add_to_class('diffs', DiffModelDescriptor(DiffModelManager()))
