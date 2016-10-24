@@ -141,8 +141,8 @@ class DiffModelDescriptor(object):
 class DiffModelManager(object):
     """Manager class that wraps a DiffSortedSet with a django-like interface"""
 
-    def __init__(self):
-        self.model = None
+    def __init__(self, model=None):
+        self.model = model
         self.db = get_connection()
 
     def _generate_key(self, pk, model_cls=None):

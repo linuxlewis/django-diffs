@@ -23,7 +23,7 @@ def register(cls):
     if not hasattr(cls, 'get_dirty_fields') and DirtyFieldsMixin not in cls.__bases__:
         cls.__bases__ = (DirtyFieldsMixin,) + cls.__bases__
 
-    cls.add_to_class('diffs', DiffModelDescriptor(DiffModelManager()))
+    setattr(cls, 'diffs', DiffModelDescriptor(DiffModelManager(cls)))
 
     if not django_apps.ready:
         klasses_to_connect.append(cls)
