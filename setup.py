@@ -10,7 +10,7 @@ setup(
     description="Keep a record of diffs made to a Django model or collection of models",
     long_description=open('README.rst').read(),
     license='MIT',
-    packages=find_packages(),
+    packages=find_packages(exclude=('tests', 'examples')),
     include_package_data=True,
     install_requires=[
         'Django>=1.8',

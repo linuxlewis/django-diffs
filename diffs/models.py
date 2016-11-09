@@ -30,8 +30,11 @@ class Diff(object):
 
         self.timestamp = timestamp
 
+    def __repr__(self):
+        return self.__str__()
+
     def __str__(self):
-        return "<{} {}>".format(self.__class__.__name__, self.data)
+        return "<{} {}>".format(self.__class__.__name__, self.timestamp)
 
     def typecast_for_storage(self):
         """Returns a tuple of the (diff_str, score) for redis"""
