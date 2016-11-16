@@ -79,8 +79,8 @@ class DiffModelManagerTestCase(TestCase):
     def test_serialize_diff(self):
         """Asserts the serialize_diff method is called when available and the data is persisted."""
 
-        def serialize_diff(self, dirty_fields):
-            return {'test': 'data', 'fields': dirty_fields}
+        def serialize_diff(self, dirty_fields, created=False):
+            return {'test': 'data', 'fields': dirty_fields, 'created': created}
 
         tm = TestModel.objects.create(name='Example')
 
@@ -96,7 +96,7 @@ class DiffModelManagerTestCase(TestCase):
         self.assertEqual(len(TestModel.diffs.get_by_object_id(tm.id)), 2)
 
         # It should have expected data
-        expected = {'test': 'data', 'fields': ['name']}
+        expected = {'test': 'data', 'fields': ['name'], 'created': False}
 
         diff = TestModel.diffs.get_by_object_id(tm.id)[-1]
 

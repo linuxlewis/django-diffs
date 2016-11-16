@@ -20,7 +20,7 @@ def on_post_save(sender, instance, created, **kwargs):
     if instance.__dirty_fields:
         # get the data
         if hasattr(instance, 'serialize_diff'):
-            data = instance.serialize_diff(instance.__dirty_fields)
+            data = instance.serialize_diff(instance.__dirty_fields, created=created)
         else:
             data = serialize_object(instance, instance.__dirty_fields)
 

@@ -157,7 +157,7 @@ Custom Serialization
 By default django-diffs uses ``django.core.serializers`` module to serialize the diff to json.
 
 To use your own custom serialization format just implement the ``serialize_diff`` method
-on your model. It will be passed the list of ``dirty_fields``.
+on your model. It will be passed the list of ``dirty_fields`` and the ``created`` kwarg.
 
 .. code:: python
 
@@ -170,7 +170,7 @@ on your model. It will be passed the list of ``dirty_fields``.
         question_text = models.CharField(max_length=200)
         pub_date = models.DateTimeField('date published')
 
-        def serialize_diff(self, dirty_fields):
+        def serialize_diff(self, dirty_fields, created=False):
             return {'fields': dirty_fields}
 
     question = Question.objects.create(question_text='What will happen?')
