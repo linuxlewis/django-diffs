@@ -96,7 +96,7 @@ class DiffModelManagerTestCase(TestCase):
         self.assertEqual(len(TestModel.diffs.get_by_object_id(tm.id)), 2)
 
         # It should have expected data
-        expected = {'test': 'data', 'fields': ['name'], 'created': False}
+        expected = {'test': 'data', 'fields': {'name': 'Example'}, 'created': False}
 
         diff = TestModel.diffs.get_by_object_id(tm.id)[-1]
 

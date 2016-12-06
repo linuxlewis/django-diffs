@@ -13,7 +13,7 @@ logger = logging.getLogger("diffs")
 
 
 def on_pre_save(sender, instance, **kwargs):
-    instance.__dirty_fields = list(instance.get_dirty_fields().keys())
+    instance.__dirty_fields = instance.get_dirty_fields()
 
 
 def on_post_save(sender, instance, created, **kwargs):
@@ -54,7 +54,7 @@ def on_post_save(sender, instance, created, **kwargs):
 
 def serialize_object(instance, dirty_fields):
     """Serializes a django model using the default serialization."""
-    return serializers.serialize('json', [instance], fields=dirty_fields)
+    return serializers.serialize('json', [instance], fields=list(dirty_fields.keys()))
 
 
 def connect(cls):
