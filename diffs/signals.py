@@ -17,7 +17,7 @@ def on_pre_save(sender, instance, **kwargs):
 
 
 def on_post_save(sender, instance, created, **kwargs):
-    if instance.__dirty_fields:
+    if instance.__dirty_fields or created:
         # check if we should send it
         if hasattr(instance, 'send_diff') and instance.send_diff() is False:
             logger.debug("Skipped diff because send_diff returned False")
