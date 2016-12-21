@@ -76,6 +76,17 @@ class DiffModelManagerTestCase(TestCase):
         # It should not create a diff
         self.assertEqual(len(TestModel.diffs.get_by_object_id(tm.id)), 2)
 
+    def test_send_diff(self):
+        """Asserts the send_diff method is respected"""
+        tm = TestModel(name='example')
+
+        def send_diff(self):
+            return False
+        tm.send_diff = types.MethodType(send_diff, tm)
+        tm.save()
+        # It should not create a diff
+        self.assertEqual(len(tm.diffs), 0)
+
     def test_serialize_diff(self):
         """Asserts the serialize_diff method is called when available and the data is persisted."""
 

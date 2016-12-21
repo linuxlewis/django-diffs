@@ -18,6 +18,11 @@ def on_pre_save(sender, instance, **kwargs):
 
 def on_post_save(sender, instance, created, **kwargs):
     if instance.__dirty_fields:
+        # check if we should send it
+        if hasattr(instance, 'send_diff') and instance.send_diff() is False:
+            logger.debug("Skipped diff because send_diff returned False")
+            return
+
         # get the data
         if hasattr(instance, 'serialize_diff'):
             data = instance.serialize_diff(instance.__dirty_fields, created=created)
@@ -31,7 +36,6 @@ def on_post_save(sender, instance, created, **kwargs):
                 parent = instance.get_diff_parent()
                 if parent:
                     model = parent
-
             create_kwargs = {
                 'data': data,
                 'created': created,
