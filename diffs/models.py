@@ -1,5 +1,6 @@
 import json
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.encoding import python_2_unicode_compatible
 import six
 
@@ -38,7 +39,7 @@ class Diff(object):
 
     def typecast_for_storage(self):
         """Returns a tuple of the (diff_str, score) for redis"""
-        return json.dumps({'data': self.data, 'created': self.created}), self.timestamp
+        return json.dumps({'data': self.data, 'created': self.created}, cls=DjangoJSONEncoder), self.timestamp
 
 
 class DiffSortedSet(object):

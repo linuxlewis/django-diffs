@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 import json
 import types
 
@@ -27,6 +27,14 @@ class DiffModelTestCase(TestCase):
         diff = Diff(data=json.dumps({'test': 'data'}))
 
         self.assertEqual(diff.data, {'test': 'data'})
+
+    def test_typecast_for_storage(self):
+        """Asserts that non-json serialize types can be handled without error"""
+        diff = Diff(data={'test': datetime.now(),
+                          'test1': datetime.now().date()})
+
+        result = diff.typecast_for_storage()
+        self.assertIsNotNone(result)
 
 
 class DiffModelManagerTestCase(TestCase):
