@@ -41,7 +41,7 @@ def on_post_save(sender, instance, created, **kwargs):
                 'created': created,
                 'pk': model.id,
                 'model_cls': model.__class__,
-                'timestamp': precise_timestamp()
+                'timestamp': getattr(instance, '_last_save_at', precise_timestamp())
             }
             # Respect the transaction if we can and should.
             if hasattr(connection, 'on_commit') and diffs_settings['use_transactions']:
