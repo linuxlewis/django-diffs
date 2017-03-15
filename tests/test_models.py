@@ -151,16 +151,23 @@ class PruneDiffTestCase(TestCase):
 
         current_age = precise_timestamp()
 
-        self.connection.zadd('test', 'one', current_age)
+        key = diffs_settings['prefix'] + 'test'
+
+        self.connection.zadd(key, 'one', current_age)
 
         old_age = precise_timestamp(dt=timezone.now() - timedelta(seconds=diffs_settings['max_element_age'] + 1))
 
-        self.connection.zadd('test', 'two', old_age)
+        self.connection.zadd(key, 'two', old_age)
+
+        other_key = 'asgi:groups:somekey'
+        self.connection.zadd(other_key, '123', old_age)
 
         call_command('prune_diffs')
 
         # It should remove the old element
-        self.assertEqual(self.connection.zcard('test'), 1)
+        self.assertEqual(self.connection.zcard(key), 1)
+        # It should ignore keys without the prefix
+        self.assertEqual(self.connection.zcard(other_key), 1)
 
     def test_non_sorted_set(self):
         """Asserts the command doesn't blow up when its not a sortedset"""

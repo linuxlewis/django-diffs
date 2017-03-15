@@ -23,8 +23,12 @@ class Command(BaseCommand):
         self.stdout.write('Minimum age: {}'.format(min_age))
 
         for key in db.scan_iter():
-            try:
-                ret = db.zremrangebyscore(key, 0, min_age)
-                self.stdout.write('{} elements removed from {}'.format(ret, key.decode('utf-8')))
-            except ResponseError as err:
-                self.stderr.write(self.style.NOTICE('Pruning key "{}" failed: "{}"'.format(key.decode('utf-8'), err)))
+            key_str = key.decode("utf-8")
+            if key_str.startswith(diffs_settings['prefix']):
+                try:
+                    ret = db.zremrangebyscore(key, 0, min_age)
+                    self.stdout.write('{} elements removed from {}'.format(ret, key_str))
+                except ResponseError as err:
+                    self.stderr.write(self.style.NOTICE('Pruning key "{}" failed: "{}"'.format(key_str, err)))
+            else:
+                self.stdout.write("skipping key: {}".format(key_str))
