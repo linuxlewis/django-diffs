@@ -6,6 +6,7 @@ import six
 
 from . import get_connection
 from .helpers import precise_timestamp
+from .settings import diffs_settings
 
 
 @python_2_unicode_compatible
@@ -145,13 +146,14 @@ class DiffModelDescriptor(object):
 class DiffModelManager(object):
     """Manager class that wraps a DiffSortedSet with a django-like interface"""
 
-    def __init__(self, model=None):
+    def __init__(self, model=None, prefix=diffs_settings['prefix']):
         self.model = model
         self.db = get_connection()
+        self.prefix = prefix
 
     def _generate_key(self, pk, model_cls=None):
         model = model_cls or self.model
-        return '{}-{}'.format(model.__name__, str(pk))
+        return '{}{}-{}'.format(self.prefix, model.__name__, str(pk))
 
     def get_sortedset(self, pk, model_cls=None):
         """Returns the SortedSet object"""

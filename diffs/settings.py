@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from django.conf import settings
 
 DEFAULTS = {
@@ -8,7 +9,8 @@ DEFAULTS = {
     },
     'max_element_age': 60*60,
     'use_transactions': True,
-    'test_mode': False
+    'test_mode': False,
+    'prefix': 'diffs:'
 }
 
 USER_SETTINGS = getattr(settings, 'DIFFS_SETTINGS', None)
