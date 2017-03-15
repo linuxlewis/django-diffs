@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
-__version__ = '0.1.14'
+__version__ = '0.1.15'
 default_app_config = 'diffs.apps.DiffLogConfig'
 
 klasses_to_connect = []
